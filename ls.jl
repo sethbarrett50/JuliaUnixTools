@@ -41,6 +41,10 @@ function setup_args()
         "--all", "-a"
             help = "Displays hidden files"
             action = :store_true
+        
+        "--comma", "-m"
+            help = "Displaus files separated by commas"
+            action = :store_true
     end
 end
 
@@ -55,6 +59,10 @@ function print_formatting(args::Dict{String,Any})
 
     if !args["all"]
         remove_hidden(fileStrings)
+    end
+
+    if args["comma"]
+        return println(join(fileStrings, ", "))
     end
 
     output = args["output"]
