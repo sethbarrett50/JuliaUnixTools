@@ -42,16 +42,16 @@ function setup_args()
             help = "Ommits group ownership column"
             action = :store_true
 
-        "--reverse", "-r"
-            help = "Sort files in reverse"
-            action = :store_true
+        # "--reverse", "-r"
+        #     help = "Sort files in reverse"
+        #     action = :store_true
         
-        "--extension", "-X"
-            help = "Sort files alphabetically by file extension"
-            action = :store_true
+        # "--extension", "-X"
+        #     help = "Sort files alphabetically by file extension"
+        #     action = :store_true
         
-        "--time", "-t"
-            help = "Sort files by creation date and time"
+        # "--time", "-t"
+        #     help = "Sort files by creation date and time"
     end
 end
 
