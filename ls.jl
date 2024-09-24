@@ -43,7 +43,11 @@ function setup_args()
             action = :store_true
         
         "--comma", "-m"
-            help = "Displaus files separated by commas"
+            help = "Displays files separated by commas"
+            action = :store_true
+
+        "--group", "-g"
+            help = "Ommits group ownership column"
             action = :store_true
     end
 end
@@ -69,11 +73,16 @@ function print_formatting(args::Dict{String,Any})
 
     if args["long"]
         fileStrings = long_formatting(fileStrings, path)
+
+        if args["HumanReadable"]
+            fileStrings = h_formatting(fileStrings)
+        end
+
+        if args["group"]
+            group_removal(fileStrings)
+        end
     end
 
-    if args["HumanReadable"]
-        fileStrings = h_formatting(fileStrings)
-    end
 
     if output != "default.txt"
         output_to_file(fileStrings, output)
@@ -93,6 +102,20 @@ end
 """
 function remove_hidden(fileStrings::Vector{String})
     filter!(!startswith("."), fileStrings)
+end
+
+"""
+    group_removal(fileStrings::Vector{Vector{String}})
+
+    Removes the group column from each file's filestats vector
+
+    # Arguments
+    - `fileStats`: A vector of vectors, where each inner vector contains strings representing individual file statistics
+"""
+function group_removal(fileStrings::Vector{Vector{String}})
+    for fileString in fileStrings
+        deleteat!(fileString, 4)
+    end
 end
 
 """
@@ -202,19 +225,6 @@ function h_formatting(fileStrings::Vector{Vector{String}})
 
         fileString[5] = @sprintf("%.0f %s", size, units[i])
     end
-    return fileStrings
-end
-
-"""
-    h_formatting(fileStrings::Vector{String})
-
-    Format function for Vector of Strings to human readable verions.
-    Doesn't do anything because no conversions are necessary.
-
-    # Arguments
-    - `fileStrings`: A vector of strings, each representing a file name.
-""" 
-function h_formatting(fileStrings::Vector{String})
     return fileStrings
 end
 
