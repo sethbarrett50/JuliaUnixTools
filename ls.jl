@@ -20,14 +20,6 @@ function setup_args()
         "-l", "--long"
             help = "List files in the long format"
             action = :store_true
-
-        "--verbose", "-v"
-            help = "Increase verbosity"
-            action = :store_true
-
-        "--quiet", "-q"
-            help = "Decrease verbosity"
-            action = :store_true
         
         "--HumanReadable", "-H"
             help = "Returns values in human readable format"
@@ -49,6 +41,17 @@ function setup_args()
         "--group", "-g"
             help = "Ommits group ownership column"
             action = :store_true
+
+        "--reverse", "-r"
+            help = "Sort files in reverse"
+            action = :store_true
+        
+        "--extension", "-X"
+            help = "Sort files alphabetically by file extension"
+            action = :store_true
+        
+        "--time", "-t"
+            help = "Sort files by creation date and time"
     end
 end
 
