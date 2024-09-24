@@ -26,3 +26,35 @@ Currently, the utilities need to be cloned from the repository and run locally. 
 ```bash
 git clone https://github.com/yourgithubusername/unix-tools-julia.git
 cd unix-tools-julia
+```
+
+## Usage
+
+To use an implemented utility, navigate to the cloned repository's directory and run the Julia script corresponding to the utility. For example, to use the `ls` utility, you would run:
+
+```julia
+julia ls.jl
+```
+
+Each utility will come with its own set of instructions and command-line options, detailed in its specific section below as they are developed.
+
+## Contributing
+Contributions to this project are welcome! If you are interested in contributing, please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch for your feature (git checkout -b feature/your_feature_name).
+3. Commit your changes (git commit -am 'Add some feature').
+4. Push to the branch (git push origin feature/your_feature_name).
+5. Open a new Pull Request.
+Please make sure to update tests as appropriate and adhere to the existing coding style.
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Thanks to the Julia programming community for their continuous support and resources.
+
+## Contact
+
+For any inquiries, please open an issue in the GitHub repository or contact me [here](mailto:sebarrett@augusta.edu).
