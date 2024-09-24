@@ -37,6 +37,10 @@ function setup_args()
             help = "Output file name"
             action = :store_arg
             default = "default.txt"
+        
+        "--all", "-a"
+            help = "Displays hidden files"
+            action = :store_true
     end
 end
 
@@ -48,6 +52,11 @@ end
 function print_formatting(args::Dict{String,Any})
     path = args["path"]
     fileStrings = cd(readdir, path)
+
+    if !args["all"]
+        remove_hidden(fileStrings)
+    end
+
     output = args["output"]
 
     if args["long"]
@@ -63,6 +72,19 @@ function print_formatting(args::Dict{String,Any})
     else
         print_formatting(fileStrings)
     end
+end
+
+"""
+    remove_hidden(fileStrings::Vector{String})
+
+    Removes any hidden files that start with `.`
+    This is only applied when the all option is not present
+
+    # Arguments
+    - `fileStrings`: A vector of strings, each representing a file name.
+"""
+function remove_hidden(fileStrings::Vector{String})
+    filter!(!startswith("."), fileStrings)
 end
 
 """
