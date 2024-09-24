@@ -42,13 +42,13 @@ function setup_args()
             help = "Ommits group ownership column"
             action = :store_true
 
-        # "--reverse", "-r"
-        #     help = "Sort files in reverse"
-        #     action = :store_true
+        "--reverse", "-r"
+            help = "Sort files in reverse"
+            action = :store_true
         
-        # "--extension", "-X"
-        #     help = "Sort files alphabetically by file extension"
-        #     action = :store_true
+        "--extension", "-X"
+            help = "Sort files alphabetically by file extension"
+            action = :store_true
         
         # "--time", "-t"
         #     help = "Sort files by creation date and time"
@@ -84,6 +84,23 @@ function print_formatting(args::Dict{String,Any})
         if args["group"]
             group_removal(fileStrings)
         end
+
+        if args["reverse"] && args["extension"]
+            fileStrings = sort(fileStrings, by = sort_ext, rev = true)
+        elseif args["reverse"]
+            fileStrings = sort(fileStrings, by = sort_reverse, rev = true)
+        elseif args["extension"]
+            fileStrings = sort(fileStrings, by = sort_ext)
+        end
+    else
+        if args["reverse"] && args["extension"]
+            fileStrings = sort(fileStrings, by = sort_ext, rev = true)
+        elseif args["reverse"]
+            fileStrings = sort(fileStrings, rev = true)
+        elseif args["extension"]
+            fileStrings = sort(fileStrings, by = sort_ext)
+        end
+
     end
 
 
@@ -92,6 +109,43 @@ function print_formatting(args::Dict{String,Any})
     else
         print_formatting(fileStrings)
     end
+end
+
+"""
+    sort_reverse(fileStrings::Vector{String})
+
+    Sorts the long filestring in reverse
+
+    # Arguments
+    - `fileStrings`: A vector of strings, each representing a file name.
+"""
+function sort_reverse(fileString::Vector{String})
+    filename = fileString[end]
+end   
+
+"""
+    sort_ext(fileStrings::Vector{String})
+
+    Sorts the long filestring based on file extension
+
+    # Arguments
+    - `fileStrings`: A vector of strings, each representing a file name.
+"""
+function sort_ext(fileString::Vector{String})
+    filename = fileString[end]
+    splitext(filename)[2]
+end
+
+"""
+    sort_ext(fileStrings::Vector{String})
+
+    Sorts the regular filestring based on extension
+
+    # Arguments
+    - `fileStrings`: A Strings containing name of one file.
+"""
+function sort_ext(fileString::String)
+    return splitext(fileString)[2]
 end
 
 """
@@ -241,7 +295,7 @@ end
 """ 
 function print_formatting(fileStrings::Vector{String})
     for fileString in fileStrings
-        println(fileString)
+        @printf "%s\t" fileString
     end
 end
 
