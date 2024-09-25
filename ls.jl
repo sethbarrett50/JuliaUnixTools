@@ -84,32 +84,16 @@ function print_formatting(args::Dict{String,Any})
             group_removal(fileStrings)
         end
 
-        if args["reverse"] && args["extension"]
-            fileStrings = sort(fileStrings, by = sort_ext, rev = true)
-
-        elseif args["reverse"] && args["time"]
-            fileStrings = sort(fileStrings, by = sort_time)
-
-        elseif args["reverse"]
-            fileStrings = sort(fileStrings, by = sort_reverse, rev = true)
-
-        elseif args["extension"]
-            fileStrings = sort(fileStrings, by = sort_ext)
-
-        elseif args["time"]
-            fileStrings = sort(fileStrings, by = sort_time, rev = true)
+        if args["time"]
+            fileStrings = sort(fileStrings, by = sort_time, rev = !args["reverse"])
         end
+    end 
+    
+    if args["extension"]
+        fileStrings = sort(fileStrings, by = sort_ext, rev = args["reverse"])
 
-    else
-        if args["reverse"] && args["extension"]
-            fileStrings = sort(fileStrings, by = sort_ext, rev = true)
-
-        elseif args["reverse"]
-            fileStrings = sort(fileStrings, rev = true)
-
-        elseif args["extension"]
-            fileStrings = sort(fileStrings, by = sort_ext)
-        end
+    elseif args["reverse"]
+        fileStrings = sort(fileStrings, rev = true)
     end
 
     output = args["output"]
@@ -147,10 +131,14 @@ function parse_mtime(mtime_str::String)
     try
         return DateTime("$mtime_str $now_year", "u d HH:MM Y") # Recent mod
     catch e
-        return DateTime(mtime_str, "u d Y") # Older mod
+        try
+            return DateTime(mtime_str, "u d Y") # Older mod
+        catch e
+            println("Error: Could not parse modification time $mtime_str: $e")
+            return nothing 
+        end
     end
 end
-
 
 """
     sort_reverse(fileStrings::Vector{String})
@@ -165,28 +153,20 @@ function sort_reverse(fileString::Vector{String})
 end   
 
 """
-    sort_ext(fileStrings::Vector{String})
+    sort_ext(fileString::Union{Vector{String}, String})
 
-    Sorts the long filestring based on file extension
-
-    # Arguments
-    - `fileStrings`: A vector of strings, each representing a file name.
-"""
-function sort_ext(fileString::Vector{String})
-    filename = fileString[end]
-    splitext(filename)[2]
-end
-
-"""
-    sort_ext(fileStrings::Vector{String})
-
-    Sorts the regular filestring based on extension
+    Sorts both long and regular formatted fileString based on file extension
 
     # Arguments
-    - `fileStrings`: A Strings containing name of one file.
+    - `fileStrings`: Either long or regular formatted fileStrings
 """
-function sort_ext(fileString::String)
-    return splitext(fileString)[2]
+function sort_ext(fileString::Union{Vector{String}, String})
+    if isa(fileString, Vector{String})
+        filename = fileString[end]
+    else
+        filename = fileString
+    end
+    return splitext(filename)[2]  
 end
 
 """
@@ -239,23 +219,9 @@ function long_formatting(fileStrings::Vector{String}, lsPath::String)
             filepath = fileString
         end
 
-        tmpFileStats = stat(filepath)
+        tmpFileStats = safe_stat(filepath)
 
-        mode = tmpFileStats.mode
-        file_type = ifelse(isdir(filepath), "d", islink(filepath) ? "l" : "-")
-    
-        permissions = [
-            (mode & 0o400 != 0 ? "r" : "-"),  # Owner read
-            (mode & 0o200 != 0 ? "w" : "-"),  # Owner write
-            (mode & 0o100 != 0 ? "x" : "-"),  # Owner execute
-            (mode & 0o040 != 0 ? "r" : "-"),  # Group read
-            (mode & 0o020 != 0 ? "w" : "-"),  # Group write
-            (mode & 0o010 != 0 ? "x" : "-"),  # Group execute
-            (mode & 0o004 != 0 ? "r" : "-"),  # Others read
-            (mode & 0o002 != 0 ? "w" : "-"),  # Others write
-            (mode & 0o001 != 0 ? "x" : "-")   # Others execute
-        ]
-        mode = file_type * join(permissions, "")
+        mode = get_mode(tmpFileStats.mode, filepath)
 
         push!(
             fileStats, 
@@ -271,6 +237,49 @@ function long_formatting(fileStrings::Vector{String}, lsPath::String)
         )
     end
     return fileStats
+end
+
+"""
+    get_mode(mode::UInt64, filepath::String)
+
+    Function to get the chmod info about a file in the correct format for long printing.
+
+    # Arguments 
+    - `mode::UInt64`: Represents chmod info returned from stat
+    - `filepath::String`: Path to file
+"""
+function get_mode(mode::UInt64, filepath::String)
+    file_type = ifelse(isdir(filepath), "d", islink(filepath) ? "l" : "-")
+    permissions = [
+        (mode & 0o400 != 0 ? "r" : "-"),
+        (mode & 0o200 != 0 ? "w" : "-"),
+        (mode & 0o100 != 0 ? "x" : "-"),
+        (mode & 0o040 != 0 ? "r" : "-"),
+        (mode & 0o020 != 0 ? "w" : "-"),
+        (mode & 0o010 != 0 ? "x" : "-"),
+        (mode & 0o004 != 0 ? "r" : "-"),
+        (mode & 0o002 != 0 ? "w" : "-"),
+        (mode & 0o001 != 0 ? "x" : "-")
+    ]
+    return file_type * join(permissions, "")
+end
+
+"""
+    safe_stat(filepath::String)
+
+    A safe way of getting stats for a file used in long h_formatting.
+    Errors may occur if user does not have permission to view a file's stats.
+
+    # Arguments
+    - `filepath::String`: String containing path to a file which needs stats extracted
+"""
+function safe_stat(filepath::String)
+    try
+        return stat(filepath)
+    catch e
+        println("Error: Could not get file stats for $filepath: $e")
+        return nothing  
+    end
 end
 
 """
@@ -313,97 +322,88 @@ end
 function h_formatting(fileStrings::Vector{Vector{String}})
     units = ["B", "KB", "MB", "GB", "TB", "PB"]
     for fileString in fileStrings
-        size = parse(Int, fileString[5])
+        file_size = 0
+        try
+            file_size = parse(Int, fileString[5])
+        catch e
+            println("Error: Could not parse file size $(fileString[5]): $(e)")
+        end
         i = 1
 
-        while size >= 1024 && i < length(units)
-            size /= 1024.0
+        while file_size >= 1024 && i < length(units)
+            file_size /= 1024.0
             i += 1
         end
 
-        fileString[5] = @sprintf("%.0f %s", size, units[i])
+        fileString[5] = @sprintf("%.0f %s", file_size, units[i])
     end
     return fileStrings
 end
 
 """
-    print_formatting(fileStrings::Vector{String})
+    print_formatting(data::Union{Vector{String}, Vector{Vector{String}}})
 
-    Print each string in the given vector of files to the standard output, one per line. This is the base case for ls without arguments
+    Print datas to the standard output, one file per line.
+    Works for both regular and long formatting
 
     # Arguments
-    - `fileStrings`: A vector of strings, each representing a file name.
+    - `data`: Represents either a Vector of Strings or a nested Vector of Strings; works with both.
 """ 
-function print_formatting(fileStrings::Vector{String})
-    for fileString in fileStrings
-        @printf "%s\t" fileString
-    end
-    println()
-end
-
-"""
-    print_formatting(fileStrings::Vector{Vector{String}})
-
-    Print formatted output for nested vectors, used for displaying a table of file statistics.
-    Each inner vector represents a row of data, and each element of an inner vector is printed in a tab-separated format on a new line.
-
-    # Arguments
-    - `fileStrings`: A vector of vectors, where each inner vector contains strings representing individual file statistics
-"""
-function print_formatting(fileStrings::Vector{Vector{String}})
-    for filestats in fileStrings
-        for filestat in filestats
-            @printf "%s\t" filestat
-        end
-        println()
-    end
-end
-
-"""
-    output_to_file(fileStrings::Vector{Vector{String}}, savePath::String)
-
-    File output for nested vectors, used for displaying a table of file statistics.
-    Each inner vector represents a row of data, and each element of an inner vector is saved in a tab-separated format on a new line.
-    The data from the fileStrings argument is saved to a file specified with the savePath String.
-
-    # Arguments
-    - `fileStrings`: A vector of vectors, where each inner vector contains strings representing individual file statistics
-    - `savePath`: A string where the data from fileStrings is saved to
-"""
-function output_to_file(fileStrings::Vector{String}, savePath::String)
-    open(savePath, "w") do file
-        for fileString in fileStrings
-            write(file, fileString)
-            write(file, "\n")
+function print_formatting(data::Union{Vector{String}, Vector{Vector{String}}})
+    for item in data
+        if isa(item, Vector)
+            println(join(item, "\t"))
+        else
+            println(item)
         end
     end
 end
 
 """
-    output_to_file(fileStrings::Vector{String}, savePath::String)
+    output_to_file(data::Union{Vector{String}, Vector{Vector{String}}}, savePath::String)
 
-    File output for vectors, used for displaying a table of file names.
-    Each element of the vector is saved on a new line.
+    File output for data, used for displaying a table of file statistics.
+    Works with both long and regular formatted data.
     The data from the fileStrings argument is saved to a file specified with the savePath String.
+    Handles exceptions that might occur if permission to write to the file is not available.
 
     # Arguments
-    - `fileStrings`: A vector containing strings representing individual file statistics
+    - `data``: Either a Vector containing Strings or a nested Vector of Strings that need to be written to a file. 
     - `savePath`: A string where the data from fileStrings is saved to
 """
-function output_to_file(fileStrings::Vector{Vector{String}}, savePath::String)
-    open(savePath, "w") do file
-        for fileStats in fileStrings
-            for fileStat in fileStats
-                write(file, fileStat)
-                write(file, "\t")
+function output_to_file(data::Union{Vector{String}, Vector{Vector{String}}}, savePath::String)
+    try
+        open(savePath, "w") do file
+            for item in data
+                if isa(item, Vector)
+                    write(file, join(item, "\t"))
+                else
+                    write(file, item)
+                end
+                write(file, "\n")
             end
-            write(file, "\n")
         end
+    catch e
+        println("Error: Could not write to file $savePath: $e")
     end
-end 
+end
+
+"""
+    safe_parse_args(setup_args_function)
+
+    Added in order to catch any issues when trying to parse arguments that ArgParse may have missed.
+"""
+function safe_parse_args(setup_args_function)
+    try
+        return parse_args(setup_args_function())
+    catch e
+        println("Error: Invalid arguments provided: $e")
+        return nothing 
+    end
+end
 
 function main()
-    args = parse_args(setup_args())
+    args = safe_parse_args(setup_args)
 
     print_formatting(args)
 end
