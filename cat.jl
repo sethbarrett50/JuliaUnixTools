@@ -1,5 +1,3 @@
-module JuliaUnixTools
-
 using Pkg
 Pkg.activate("."; io=devnull)
 using ArgParse
@@ -75,5 +73,3 @@ function main()
 end
 
 main()
-
-end
