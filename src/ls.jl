@@ -1,6 +1,7 @@
+module JuliaUnixTools
+
 using Pkg
 Pkg.activate("."; io=devnull)
-Pkg.instantiate()
 using ArgParse
 using Printf
 using Dates
@@ -409,3 +410,5 @@ function main()
 end
 
 main()
+
+end

@@ -1,2 +1,17 @@
+name = "JuliaUnixTools"
+uuid = "574715cf-ee7c-49fd-8de6-c4802a3f3cc6"
+version = "0.1.0"
+
 [deps]
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+
+[compat]
+julia = "1.10"
+
+[extras]
+Test = "8dfed614-4df8-571b-b76d-bd0666fdcdca"
+
+[targets]
+test = ["Test"]
