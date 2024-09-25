@@ -50,8 +50,9 @@ function setup_args()
             help = "Sort files alphabetically by file extension"
             action = :store_true
         
-        # "--time", "-t"
-        #     help = "Sort files by creation date and time"
+        "--time", "-t"
+            help = "Sort files by creation date and time"
+            action = :store_true
     end
 end
 
@@ -72,8 +73,6 @@ function print_formatting(args::Dict{String,Any})
         return println(join(fileStrings, ", "))
     end
 
-    output = args["output"]
-
     if args["long"]
         fileStrings = long_formatting(fileStrings, path)
 
@@ -87,22 +86,33 @@ function print_formatting(args::Dict{String,Any})
 
         if args["reverse"] && args["extension"]
             fileStrings = sort(fileStrings, by = sort_ext, rev = true)
+
+        elseif args["reverse"] && args["time"]
+            fileStrings = sort(fileStrings, by = sort_time)
+
         elseif args["reverse"]
             fileStrings = sort(fileStrings, by = sort_reverse, rev = true)
+
         elseif args["extension"]
             fileStrings = sort(fileStrings, by = sort_ext)
+
+        elseif args["time"]
+            fileStrings = sort(fileStrings, by = sort_time, rev = true)
         end
+
     else
         if args["reverse"] && args["extension"]
             fileStrings = sort(fileStrings, by = sort_ext, rev = true)
+
         elseif args["reverse"]
             fileStrings = sort(fileStrings, rev = true)
+
         elseif args["extension"]
             fileStrings = sort(fileStrings, by = sort_ext)
         end
-
     end
 
+    output = args["output"]
 
     if output != "default.txt"
         output_to_file(fileStrings, output)
@@ -110,6 +120,37 @@ function print_formatting(args::Dict{String,Any})
         print_formatting(fileStrings)
     end
 end
+
+"""
+    sort_time(fileStrings::Vector{String})
+
+    Sorts the long filestring based on modification time
+
+    # Arguments
+    - `fileStrings`: A vector of strings, each representing a file name.
+"""
+function sort_time(fileString::Vector{String})
+    mtime_str = fileString[end-1]
+    return parse_mtime(mtime_str)
+end
+
+"""
+    parse_mtime(mtime_str::String)
+
+    Parses string into DateTime object for proper sorting
+
+    # Arguments:
+    - `mtime_str::String`: String to be converted into DateTime Object
+"""
+function parse_mtime(mtime_str::String)
+    now_year = year(now())
+    try
+        return DateTime("$mtime_str $now_year", "u d HH:MM Y") # Recent mod
+    catch e
+        return DateTime(mtime_str, "u d Y") # Older mod
+    end
+end
+
 
 """
     sort_reverse(fileStrings::Vector{String})
