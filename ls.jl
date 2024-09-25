@@ -297,6 +297,7 @@ function print_formatting(fileStrings::Vector{String})
     for fileString in fileStrings
         @printf "%s\t" fileString
     end
+    println()
 end
 
 """
