@@ -27,8 +27,8 @@ More utilities will be added to this list as the project progresses.
 Currently, the utilities need to be cloned from the repository and run locally. Future updates may include packaging and distribution through Julia's package manager.
 
 ```bash
-git clone https://github.com/yourgithubusername/unix-tools-julia.git
-cd unix-tools-julia
+git clone https://github.com/yourgithubusername/JuliaUnixTools.git
+cd JuliaUnixTools
 ```
 
 ## Usage
