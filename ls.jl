@@ -4,6 +4,10 @@ using ArgParse
 using Printf
 using Dates
 
+const COLOR_DIR = "\e[34m"    # Blue for directories
+const COLOR_EXEC = "\e[32m"   # Green for executable files
+const COLOR_RESET = "\e[0m"   # Reset color to default
+
 """
     setup_args()
 
@@ -51,6 +55,10 @@ function setup_args()
         
         "--time", "-t"
             help = "Sort files by creation date and time"
+            action = :store_true
+
+        "--color", "-c"
+            help = "Prints directories and executable files in color"
             action = :store_true
     end
 end
@@ -100,7 +108,31 @@ function print_formatting(args::Dict{String,Any})
     if output != "default.txt"
         output_to_file(fileStrings, output)
     else
-        print_formatting(fileStrings)
+        print_formatting(fileStrings, path, args["color"])
+    end
+end
+
+"""
+    get_color(filepath::String, mode::String, use_color::Bool)
+
+    Checks the file stats for a file and returns CONST for color formatting
+
+    # Arguments: 
+    - `filepath::String`: Path to file that needs color extracted in String format
+    - `mode::String`: Mode string from long formatting
+    - `use_color::Bool`: Boolean representing if color is needed
+"""
+function get_color(filepath::String, mode::String, use_color::Bool)
+    if !use_color
+        return COLOR_RESET  
+    end
+
+    if isdir(filepath)
+        return COLOR_DIR
+    elseif occursin(r"x", mode) 
+        return COLOR_EXEC
+    else
+        return COLOR_RESET
     end
 end
 
@@ -110,7 +142,7 @@ end
     Sorts the long filestring based on modification time
 
     # Arguments
-    - `fileStrings`: A vector of strings, each representing a file name.
+    - `fileString::Vector{String}`: A vector of strings, each representing a file name.
 """
 function sort_time(fileString::Vector{String})
     mtime_str = fileString[end-1]
@@ -145,7 +177,7 @@ end
     Sorts the long filestring in reverse
 
     # Arguments
-    - `fileStrings`: A vector of strings, each representing a file name.
+    - `fileString::Vector{String}`: A vector of strings, each representing a file name.
 """
 function sort_reverse(fileString::Vector{String})
     filename = fileString[end]
@@ -157,7 +189,7 @@ end
     Sorts both long and regular formatted fileString based on file extension
 
     # Arguments
-    - `fileStrings`: Either long or regular formatted fileStrings
+    - `fileString::Union{Vector{String}, String}`: Either long or regular formatted fileStrings
 """
 function sort_ext(fileString::Union{Vector{String}, String})
     if isa(fileString, Vector{String})
@@ -202,7 +234,8 @@ end
     Function formats and returns this information in a vector of vectors of strings.
 
     # Arguments
-    - `fileStrings`: A vector of strings, each representing a file name.
+    - `fileStrings::Vector{String}`: A vector of strings, each representing a file name.
+    - `lsPath::String`: String containing current dir path
 
     # Returns
     - `fileStats`: A vector of vectors, where each inner vector contains strings representing individual file statistics
@@ -288,7 +321,7 @@ end
     Returns value in format of time in ls -l.
 
     # Arguments
-    - `mtime`: A Float64 value representing Unix time.
+    - `mtime::Float64`: A Float64 value representing Unix time.
 
     # Returns
     -  A vector of vectors, where each inner vector contains strings representing individual file statistics
@@ -313,7 +346,7 @@ end
     Converts values in the inner vectors into human readable format.
 
     # Arguments
-    - `fileStrings`: A vector of vectors, where each inner vector contains strings representing individual file statistics
+    - `fileStrings::Vector{Vector{String}}`: A vector of vectors, where each inner vector contains strings representing individual file statistics
 
     # Returns
     - `fileStrings`: A vector of vectors, where each inner vector contains strings representing individual file statistics, with byte size converted into human readable format
@@ -346,14 +379,21 @@ end
     Works for both regular and long formatting
 
     # Arguments
-    - `data`: Represents either a Vector of Strings or a nested Vector of Strings; works with both.
+    - `data::Union{Vector{String}, Vector{Vector{String}}}`: Represents either a Vector of Strings or a nested Vector of Strings; works with both.
+    - `path::String`: Path to files in String format
+    - `use_color::Bool`: Boolean from arugments for if color is used
 """ 
-function print_formatting(data::Union{Vector{String}, Vector{Vector{String}}})
+function print_formatting(data::Union{Vector{String}, Vector{Vector{String}}}, path::String, use_color::Bool)
     for item in data
         if isa(item, Vector)
-            println(join(item, "\t"))
+            color = get_color(joinpath(path, item[end]), item[1], use_color)
+            print(join(item[1:end-1], "\t") * "\t")
+            println(color * item[end] * COLOR_RESET)
         else
-            println(item)
+            filepath = joinpath(path, item)
+            mode = get_mode(stat(filepath).mode, filepath)
+            color = get_color(filepath, mode, use_color)
+            println(color * item * COLOR_RESET)
         end
     end
 end
@@ -367,8 +407,8 @@ end
     Handles exceptions that might occur if permission to write to the file is not available.
 
     # Arguments
-    - `data``: Either a Vector containing Strings or a nested Vector of Strings that need to be written to a file. 
-    - `savePath`: A string where the data from fileStrings is saved to
+    - `data::Union{Vector{String}, Vector{Vector{String}}}``: Either a Vector containing Strings or a nested Vector of Strings that need to be written to a file. 
+    - `savePath::String`: A string where the data from fileStrings is saved to
 """
 function output_to_file(data::Union{Vector{String}, Vector{Vector{String}}}, savePath::String)
     try

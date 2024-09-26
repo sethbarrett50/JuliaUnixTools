@@ -26,7 +26,7 @@ end
 """
     print_file(args::Dict{String,Any})
 
-    Applys functions to input appropriate for arguments provided.
+    Applys functions appropriate for arguments provided.
 """ 
 function print_file(args::Dict{String,Any})
     filePath = args["filePath"]
