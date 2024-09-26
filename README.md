@@ -12,9 +12,9 @@ Below is the list of Unix utilities that are planned for implementation in this 
 
 - `ls` - List directory contents. [Done]
 - `cat` - Concatenate and display files. [Done]
-- `wc` - Find word count [In Progress]
+- `wc` - Find word count [Done]
 - `head/tail` - Displays part of a file [Done]
-- `grep` - File pattern searcher. [Planned]
+- `grep` - File pattern searcher. [In Progress]
 - `chmod` - Change file permissions [Planned]
 - `echo` - Display a line of text. [Planned]
 - `find` - Search for files in a directory hierarchy. [Planned]
