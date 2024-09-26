@@ -145,20 +145,39 @@ function search_file(fileName::String, pattern::Regex, args::Dict{String, Any})
                 if args["count"]
                     count += 1
                 else
-                    if args["line-number"]
-                        print("$(i): ")
-                    end
-                    if args["color"]
-                        println(highlight_match(line, pattern))
-                    else
-                        println(line)
-                    end
+                    process_line(line, i, pattern, args)
                 end
             end
         end
+
         if args["count"] && count > 0
             println("$(fileName): $count matches")
         end
+    end
+end
+
+"""
+    process_line(line::String, i::Int, pattern::Regex, args::Dict{String, Any})
+
+    Processes the printing of one line of matches
+    Deals with line number and color printing
+
+    # Arguments
+
+    - `line::String`: String containing text of line to be printed
+    - `i::Int`: Represents line number in file
+    - `pattern::Regex`: Regex pattern adjusted if ignore-case or not
+    - `args::Dict{String, Any}`: Arguments dictionary
+"""
+function process_line(line::String, i::Int, pattern::Regex, args::Dict{String, Any})
+    if args["line-number"]
+        print("$(i): ")
+    end
+
+    if args["color"]
+        println(highlight_match(line, pattern))
+    else
+        println(line)
     end
 end
 
