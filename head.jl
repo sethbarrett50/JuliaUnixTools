@@ -18,8 +18,10 @@ function setup_args()
             required = true
 
         "--numLines", "-n"
-            help = "Number the lines printed"
-            action = :store_true
+            help = "Number of lines to be printed"
+            default = 10
+            arg_type = Int
+            action = :store_arg
     end
 end
 
@@ -33,39 +35,26 @@ function print_file(args::Dict{String,Any})
 
     for file in filePath
         if isdir(file)
-            return @printf "cat: %s: Is a directory\n" file
+            return @printf "head: %s: Is a directory\n" file
         end
-
-        if args["numLines"]
-            lineNum_print(file)
-        else
-            basic_print(file)
-        end
-    end
-end
-
-"""
-    basic_print(filePath::String)
-
-    Function for basic printing of file
-"""
-function basic_print(filePath::String)
-    open(filePath, "r") do f
-        for line in readlines(f)
-            println(line)
-        end
+        
+        lineNum_print(file, args["numLines"])
     end
 end
 
 """
     lineNum_print(filePath::String)
 
-    Function for printing of file with line numbers
+    Function for printing of file for a certain number of lines from top
 """
-function lineNum_print(filePath::String)
+function lineNum_print(filePath::String, numLines::Int)
     open(filePath, "r") do f
         for (i, line) in enumerate(readlines(f))
-            @printf "\t%i %s\n" i line
+            if i <= numLines
+                println(line)
+            else
+                return nothing
+            end
         end
     end
 end
